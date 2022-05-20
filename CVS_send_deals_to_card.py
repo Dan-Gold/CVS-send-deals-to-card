@@ -18,18 +18,25 @@ import sys
 import time
 
 
-
+# URL Lib
 import urllib
 import urllib.request
 import urllib.robotparser as urobot
 
-
+# Selenium
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver import ActionChains
+
+# Selenium stealth
+from selenium import webdriver
+from selenium_stealth import stealth
+
+# undetected _chromedriver
+import undetected_chromedriver as uc
 
 
 def argParse():
@@ -75,14 +82,27 @@ class cvsDeals():
 		self.webWait = webWait
 
 		# Hard coded links for navigation
-		self.loginURL = "https://www.cvs.com/retail-login/account/login/home?icid=cvsheader:signin&screenname=/"
-		self.extraCare = "https://www.cvs.com/extracare/home?icid=cvsheader:extracare"
-		self.robots = "https://www.cvs.com/robots.txt"
+		#self.loginURL = "https://www.cvs.com/retail-login/account/login/home?icid=cvsheader:signin&screenname=/"
+		#self.extraCare = "https://www.cvs.com/extracare/home?icid=cvsheader:extracare"
+		self.extraCare = "file:///home/daniel/Documents/CVS_website/FullWebsite/Manage ExtraCare Deals & Rewards.html" # TODO remove in the future when testing complete
+		#self.robots = https://www.cvs.com/robots.txt
 
 		# Internal setup actions
-		self.driver = webdriver.Chrome()
-		self.robotsParse = self.setupURLChecker()
+		options = self.driverOptions()
+		#self.driver = webdriver.Chrome()
+		self.driver = uc.Chrome(options=options)
+
+		#self.robotsParse = self.setupURLChecker()
 		random.seed(time.time())
+
+	def driverOptions(self):
+		""" Sets up the desired options for the chrome driver. """
+
+		options = uc.ChromeOptions()
+		options.add_argument("start-maximized")
+		#options.add_argument("--headless")
+
+		return(options)
 
 	def setupURLChecker(self):
 		""" Sets up the robot file parser that will be used in checkCanBotURL(). """
@@ -230,7 +250,7 @@ class cvsDeals():
 		#         /html/body/app-root/div[2]/app-home-page/main/app-home-content/app-authenticated-view/div/app-coupon-listing-wrapper/div/div/div[2]/div/app-all-coupons/div/div[2]/div[32]/div/app-variable/div/div[2]/button/img
 
 
-		results = driver.find_elements_by_xpath("//app-all-coupons")
+		results = self.driver.find_elements_by_xpath("//app-all-coupons")
 
 		# Store results for testing purposes, maybe it will be usefull.
 		for item in results:
@@ -240,12 +260,40 @@ class cvsDeals():
 			print(item.get_attribute("outerHTML"))
 			print(item.get_attribute("src"))
 
-			with open(cvsData.txt, 'a+') as f:
-				f.write("===========================================================================================================================================================================================================")
-				f.write(item)
-				f.write(item.get_attribute("innerHTML"))
-				f.write(item.get_attribute("outerHTML"))
-				f.write(item.get_attribute("src"))
+			with open("cvsData.txt", 'a+') as f:
+				f.write("==================================================================\n")
+				f.write(str(item))
+				f.write("\n")
+				f.write(str(item.get_attribute("innerHTML")))
+				f.write("\n")
+				f.write(str(item.get_attribute("outerHTML")))
+				f.write("\n")
+				f.write(str(item.get_attribute("src")))
+				f.write("\n")
+
+	def mainDriverTest(self):
+		""" Main driver for testing on downloaded website. """
+
+		self.driver.get(self.extraCare)
+
+		# Already at deals/rewards page on the downloaded websire for now
+
+		# Wait to not overload server
+		self.randomWaitTime()
+
+		# Load the entire page
+		#self.expandPage()
+
+		# Wait to not overload server
+		#self.randomWaitTime()
+
+		# Gather all of the info
+		self.addAllDealsToCard()
+
+		# See which deals are not added to card, or can be added to the card
+		# after parsing click on all of the elements to add to card, but make sure to give 3-5 is seconds randomly
+
+		self.addAllDealsToCard()
 
 	def mainDriver(self):
 		""" Runs the execution of the current class. """
@@ -322,5 +370,5 @@ if __name__ == "__main__":
 
 	app = cvsDeals(username, password, webWait)
 
-	app.mainDriver()
+	app.mainDriverTest()
 
