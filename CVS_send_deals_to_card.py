@@ -2,8 +2,40 @@
 
 Python 3.10.4
 
-Summary:
-This is a failed project. CVS.com keeps blocking my browser eventhough I am following thier robots.txt file as far as I can tell in conjunction with urllib.robotparser
+
+OVERVIEW:
+
+
+
+Technical:
+
+
+
+
+
+OUTPUT:
+
+
+
+
+USAGE:
+
+
+
+
+EXAMPLE:
+
+
+
+
+Revision Log:
+
+Name                |  Revision  |  Date      |  Note
+--------------------------------------------------------------------------------
+Dan_Gold            |  1.1       | 05/20/2022 |  Initial release.
+--------------------------------------------------------------------------------
+
+
 
 
 https://stackoverflow.com/questions/65080685/usb-usb-device-handle-win-cc1020-failed-to-read-descriptor-from-node-connectio?answertab=scoredesc#tab-top
@@ -42,16 +74,16 @@ import undetected_chromedriver as uc
 def argParse():
 	""" This is the argparse for calling this script as main """
 
-	parser = argparse.ArgumentParser(description = "This program is used to log the current user onto the CVS website, navagate to the current rewards page and add all of the current deals to the users card. ")
+	parser = argparse.ArgumentParser(description = "This program is used to log the current user onto the CVS website, navigate to the current rewards page and add all of the current deals to the users card. ")
 
 	required = parser.add_argument_group("required arguments")
 
 	# Required arguments
 	required.add_argument('-u', dest="username", help = "The email or username used to log into the website. ", required=True)
-	required.add_argument('-p', action=password, dest="password", nargs='?', help = "The password used to log into the webiste. If none specified the program will ask the user for a password via terminal input. ", required=True)
+	required.add_argument('-p', action=password, dest="password", nargs='?', help = "The password used to log into the website. If none specified the program will ask the user for a password via terminal input. ", required=True)
 
 	# Optional arguments
-	#parser.add_argument('-w', dest="webWait", default=20, help = "Max ammount of time to wait for a webpage element to load", required=True)
+	#parser.add_argument('-w', dest="webWait", default=20, help = "Max amount of time to wait for a web page element to load", required=True)
 
 	args = parser.parse_args()
 
@@ -112,34 +144,38 @@ class cvsDeals():
 		rp.read()
 		return(rp)
 
-	def randomWaitTime(self, min=4, max=10):
-		""" Waits for a random amount of time to pass to not overload the website and hopefully to trick the website to thinking we are not a bot and to give the server a break from fast requests. min cannot be less than 3. Returns nothing. """
+	def randomWaitTime(self, minI=4, maxI=10):
+		""" Waits for a random amount of time to pass to not overload the website and
+		hopefully to trick the website to thinking we are not a bot and to give the server
+		a break from fast requests. 
 
-		if(min < 4):
-			min = 4
+		minI cannot be less than 4. Returns nothing. """
 
-		rand = random.uniform(min, max)
+		if(minI < 4):
+			minI = 4
 
-		print("Waiting for {0} seconds... Standby...".format(rand))
+		rand = random.uniform(minI, maxI)
+
+		print("    Waiting for {0} seconds... Standby...".format(rand))
 
 		time.sleep(rand)
 
 	def checkCanBotURL(self, url):
-		""" Checks the given url to see if the program is allowed to bot the specific webpage based on information from the website's robots.txt file. """
+		""" Checks the given URL to see if the program is allowed to bot the specific web page based on information from the website's robots.txt file. """
+
+		print("Checking robots.txt")
 
 		if(self.robotsParse.can_fetch("*", url)):
-			print("The webpage: {0}   is allowed to be parsed and botted according to the robot.txt file on hand. ".format(url))
+			print("The web page: {0}   is allowed to be parsed and botted according to the robot.txt file on hand. ".format(url))
 			return(True)
 		else:
-			print("The webpage: {0}   is NOT allowed to be parsed and botted according to the robot.txt file on hand. ".format(url))
+			print("The web page: {0}   is NOT allowed to be parsed and botted according to the robot.txt file on hand. ".format(url))
 			return(False)
-
-	def checkDriver(self):
-		""" Checks if google chrome driver is installed. TODO: Check preferences to see which driver the user wants to use, or test to see if this can work with other drivers... Check/download latest driver. """
-		pass
 
 	def login(self):
 		""" Logs the user into the website if robots.txt allows. """
+
+		print("Logging user into the website")
 
 		# Setup wait object
 		wait = WebDriverWait(self.driver, self.webWait)
@@ -201,99 +237,139 @@ class cvsDeals():
 
 		# Once clicked on sign in, website will redirect to main page
 
+		# TODO: add a check to make sure the user is logged in, search for <a href="javascript:void(0)" class="head-links">Sign Out</a>
+
 		# Wait to not overload server
 		self.randomWaitTime()
 
 	def goToDeals(self):
 		""" Navigates to the deals page on the CVS website. """
 
-		# Wait to not overload server
-		self.randomWaitTime()
-
-		self.driver.get("https://www.cvs.com/extracare/home?icid=cvsheader:extracare")
+		print("Navigating to deals page...")
 
 		# Wait to not overload server
 		self.randomWaitTime()
 
-	def expandPage(self):
-		""" Scrolls all the way down to the bottom of the current website page by scrolling down to the copy right information. """
+		self.driver.get(self.extraCare)
 
 		# Wait to not overload server
 		self.randomWaitTime()
 
-		# Create wait object
-		wait = WebDriverWait(self.driver, self.webWait)
-
-		# Wait for copy right to show up at the bottom of the page
-		copyRight = "/html/body/app-root/div[2]/app-home-page/cvs-footer-container/footer/div/section[2]/cvs-legal-content-ribbon//div[2]/p"
-		el_copyRight = wait.until(EC.presence_of_element_located((By.XPATH, copyRight)))
+	def expandPageInstantOne(self):
+		""" Scrolls instantly all the way down to the bottom of the current website page by
+		going down to the 'upper-footer-container' """
 
 		# Wait to not overload server
 		self.randomWaitTime()
+
+		print("Scrolling to the bottom of the website...")
+
+		#el_bot = self.driver.find_element(by=By.CLASS_NAME, value="footer-container red-line")
+		el_bot = self.driver.find_element(by=By.CLASS_NAME, value="upper-footer-container")
 
 		# Scroll to the bottom of the page
-		el_copyRight.scrollIntoView()
+		actions = ActionChains(self.driver)
+		actions.move_to_element(el_bot).perform()
+
+	def expandPageInstantTwo(self):
+		""" Another way to instantly go all the way down to the bottom of a web page. """
+
+		print("Scrolling to the bottom of the website...")
 
 		# Wait to not overload server
 		self.randomWaitTime()
+
+		self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+	def expandPageSmoothFast(self):
+		""" Smoothly scroll down to the element we are trying to reach to load the whole
+		page. This scrolls to quickly, need to find a way to slow this down if I intend
+		to use this. """
+
+		print("Scrolling to the bottom of the website...")
+
+		el_bot = self.driver.find_element(by=By.CLASS_NAME, value="upper-footer-container")
+
+		self.driver.execute_script('arguments[0].scrollIntoView({behavior:"smooth"});', el_bot)
+
+	def expandPage(self):
+		""" Slowly scroll to the 'upper-footer-container' element. """
+
+		# Wait to not overload server
+		self.randomWaitTime()
+
+		print("Scrolling to the bottom of the website...")
+
+		el_bot = self.driver.find_element(by=By.CLASS_NAME, value="upper-footer-container")
+
+		width = el_bot.location.get('x')
+		height = el_bot.location.get('y')
+
+		scrollDisctance = 10
+
+		while(scrollDisctance < height):
+			self.driver.execute_script(("window.scrollTo(0, "+str(scrollDisctance)+")"))
+			time.sleep(random.uniform(0.25, 1.0))
+			thing = random.uniform(100, 350)
+			scrollDisctance = scrollDisctance + thing
 
 	def addAllDealsToCard(self):
 		""" Goes through the entire deals page and adds all of them to your card. """
 
-		# Get all i-send-to-card.svg xpath locations or something, elements
-		#<img _ngcontent-sfk-c58="" alt="" class="action-icon" src="/webcontent/ng-extracare/extracare-v2/assets/img/coupon-images/i-send-to-card.svg">
-		# HTML <img _ngcontent-sfk-c62="" alt="" class="action-icon" src="/webcontent/ng-extracare/extracare-v2/assets/img/coupon-images/i-send-to-card.svg">
-		# Selector #coupon_396718 > div.right-part.ng-star-inserted > button > img
-		# JS path # document.querySelector("#coupon_396718 > div.right-part.ng-star-inserted > button > img")
-		# XPATH # /html/body/app-root/div[2]/app-home-page/main/app-home-content/app-authenticated-view/div/app-coupon-listing-wrapper/div/div/div[2]/div/app-all-coupons/div/div[3]/div[1]/div[29]/app-manufacture/div/div[2]/button/img
-		#         /html/body/app-root/div[2]/app-home-page/main/app-home-content/app-authenticated-view/div/app-coupon-listing-wrapper/div/div/div[2]/div/app-all-coupons/div/div[3]/div[1]/div[22]/app-manufacture/div/div[2]/button/img
-		#         /html/body/app-root/div[2]/app-home-page/main/app-home-content/app-authenticated-view/div/app-coupon-listing-wrapper/div/div/div[2]/div/app-all-coupons/div/div[2]/div[32]/div/app-variable/div/div[2]/button/img
+		print("Adding deals to your card...")
 
+		# Get the entire all coupons element
+		results = self.driver.find_elements(by=By.XPATH, value="//app-all-coupons")
 
-		results = self.driver.find_elements_by_xpath("//app-all-coupons")
+		actionIcons = []
 
-		# Store results for testing purposes, maybe it will be usefull.
+		# Just in case they decided to use multiple '//app-all-coupons' in the future
+		# Get all 'action-icon' elements from the 'app-all-coupons' elements
 		for item in results:
-			print("==================================================================")
-			print(item)
-			print(item.get_attribute("innerHTML"))
-			print(item.get_attribute("outerHTML"))
-			print(item.get_attribute("src"))
+			actionIcons = actionIcons + item.find_elements(by=By.CLASS_NAME, value="action-icon")
 
-			with open("cvsData.txt", 'a+') as f:
-				f.write("==================================================================\n")
-				f.write(str(item))
-				f.write("\n")
-				f.write(str(item.get_attribute("innerHTML")))
-				f.write("\n")
-				f.write(str(item.get_attribute("outerHTML")))
-				f.write("\n")
-				f.write(str(item.get_attribute("src")))
-				f.write("\n")
+		dealsToAdd = []
+
+		# Process all of the found 'action-icon' elements and make sure to get only the
+		# elements containing "i-send-to-card.svg"
+		for item in actionIcons:
+			if("i-send-to-card.svg" in item.get_attribute("src")):
+				dealsToAdd.append(item)
+
+		# Wait to not overload server
+		self.randomWaitTime(maxI=5)
+
+
+		# Now go through and click on all of them to add to card, processing time for each request should take around 1-5 seconds
+		for item in dealsToAdd:
+			# item.click()
+			print("Clicked on element {0}".format(item.get_attribute("src").split('/')[-1]))
+
+			# Wait to not overload server
+			self.randomWaitTime(maxI=6)
 
 	def mainDriverTest(self):
 		""" Main driver for testing on downloaded website. """
 
+		print("Running TEST main driver")
+
 		self.driver.get(self.extraCare)
 
-		# Already at deals/rewards page on the downloaded websire for now
+		# Already at deals/rewards page on the downloaded website for now
 
 		# Wait to not overload server
 		self.randomWaitTime()
 
 		# Load the entire page
-		#self.expandPage()
+		self.expandPage()
 
 		# Wait to not overload server
-		#self.randomWaitTime()
+		self.randomWaitTime()
 
 		# Gather all of the info
 		self.addAllDealsToCard()
 
-		# See which deals are not added to card, or can be added to the card
-		# after parsing click on all of the elements to add to card, but make sure to give 3-5 is seconds randomly
-
-		self.addAllDealsToCard()
+		print("Program Complete")
 
 	def mainDriver(self):
 		""" Runs the execution of the current class. """
@@ -353,8 +429,7 @@ class cvsDeals():
 		# Gather all of the info
 		self.addAllDealsToCard()
 
-		# See which deals are not added to card, or can be added to the card
-		# after parsing click on all of the elements to add to card, but make sure to give 3-5 is seconds randomly
+		print("Program Complete")
 
 
 
@@ -371,4 +446,6 @@ if __name__ == "__main__":
 	app = cvsDeals(username, password, webWait)
 
 	app.mainDriverTest()
+
+
 
