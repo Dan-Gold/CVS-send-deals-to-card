@@ -137,6 +137,7 @@ class cvsDeals():
 
 		# Hard coded links for navigation
 		# TODO: need to remove hard coded links and use on site navigation, running into issue where the site still knows that I am using a bot, even with selenium stealth and undetected chrome driver
+		self.cvsMain = "https://www.cvs.com"
 		self.loginURL = "https://www.cvs.com/retail-login/account/login/home?icid=cvsheader:signin&screenname=/"
 		self.extraCare = "https://www.cvs.com/extracare/home?icid=cvsheader:extracare"
 		self.robots = "https://www.cvs.com/robots.txt"
@@ -214,8 +215,9 @@ class cvsDeals():
 		# Setup wait object
 		wait = WebDriverWait(self.driver, self.webWait)
 
-		# Go straight to login page
-		self.driver.get(self.loginURL)
+		# On main page, need to click on login element and wait for the login page to laod
+		el_signIn = self.driver.find_element(By.ID, "signInBtn")
+		el_signIn.click()
 
 		# Wait for email address text box
 		emailBox = "/html/body/div/cvs-login/div/cvs-login-container/div/div/div/cvs-email-field/cvs-text-input/div/input"
@@ -417,22 +419,31 @@ class cvsDeals():
 	def mainDriver(self):
 		""" Runs the execution of the current class. """
 
-		canBotInitial = self.checkCanBotURL(self.extraCare)
+		# Check if able to bot cvs main page
+		canBotMainCVS = self.checkCanBotURL(self.cvsMain)
 
-		if(canBotInitial):
-			# Go to the extra care deals page
-			self.driver.get(self.extraCare)
+		if(canBotMainCVS):
+			# Go to the cvs main page
+			self.driver.get(self.cvsMain)
 		else:
 			sys.exit()
 
 		# Wait to not overload server
 		self.randomWaitTime(10, 15)
 
+
+		# Check if able to bot extra care page, else exit program
+		canBotInitial = self.checkCanBotURL(self.extraCare)
+		if(not canBotInitial):
+			sys.exit()
+
+		# Wait to not overload server
+		self.randomWaitTime()
+
 		loggedIn = False
 
 		# Check if the user is logged into the website
 		try:
-			#self.driver.find_element_by_link_text("Sign Out")
 			self.driver.find_element(by=By.LINK_TEXT, value="Sign Out")
 			loggedIn = True
 		except Exception as e:
