@@ -5,26 +5,50 @@ Python 3.10.4
 
 OVERVIEW:
 
+	Neither CVS.com nor the app has an add all deals to card button and going through
+	adding all of CVS's weekly deals to your card is a hassle. This tool automates the 
+	process so all you need to do is run this tool.
+
 
 
 Technical:
 
+	selenium==4.1.3
+	selenium-stealth==1.0.6
+	undetected-chromedriver==2.1.1
+	urllib3==1.26.5
 
 
 
 
 OUTPUT:
 
+	Nothing
 
 
 
 USAGE:
+	usage: CVS_send_deals_to_card.py [-h] -u USERNAME -p [PASSWORD] [-headless]
 
+	This program is used to log the current user onto the CVS website, navigate to the current rewards
+	page and add all of the current deals to the users card.
+
+	options:
+	  -h, --help     show this help message and exit
+	  -headless      Run this application in a headless configuration.
+
+	required arguments:
+	  -u USERNAME    The email or username used to log into the website.
+	  -p [PASSWORD]  The password used to log into the website. If none specified the program will ask
+		             the user for a password via terminal input.
 
 
 
 EXAMPLE:
 
+	python3 CVS_send_deals_to_card.py -u username -p password
+
+	python3 CVS_send_deals_to_card.py -u username
 
 
 
@@ -34,8 +58,6 @@ Name                |  Revision  |  Date      |  Note
 --------------------------------------------------------------------------------
 Dan_Gold            |  1.1       | 05/20/2022 |  Initial release.
 --------------------------------------------------------------------------------
-
-
 
 
 https://stackoverflow.com/questions/65080685/usb-usb-device-handle-win-cc1020-failed-to-read-descriptor-from-node-connectio?answertab=scoredesc#tab-top
@@ -64,7 +86,6 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver import ActionChains
 
 # Selenium stealth
-from selenium import webdriver
 from selenium_stealth import stealth
 
 # undetected _chromedriver
@@ -84,6 +105,7 @@ def argParse():
 
 	# Optional arguments
 	#parser.add_argument('-w', dest="webWait", default=20, help = "Max amount of time to wait for a web page element to load", required=True)
+	parser.add_argument('-headless', dest="headless", action='store_true', help = "Run this application in a headless configuration. ")
 
 	args = parser.parse_args()
 
@@ -105,7 +127,7 @@ class password(argparse.Action):
 class cvsDeals():
 	""" Goes to the CVS website and adds all of the current deals to the users rewards card. """
 
-	def __init__(self, username, password, webWait):
+	def __init__(self, username, password, webWait, headless):
 		""" Object constructor for the class. """
 
 		# Input
@@ -114,25 +136,37 @@ class cvsDeals():
 		self.webWait = webWait
 
 		# Hard coded links for navigation
-		#self.loginURL = "https://www.cvs.com/retail-login/account/login/home?icid=cvsheader:signin&screenname=/"
-		#self.extraCare = "https://www.cvs.com/extracare/home?icid=cvsheader:extracare"
-		self.extraCare = "file:///home/daniel/Documents/CVS_website/FullWebsite/Manage ExtraCare Deals & Rewards.html" # TODO remove in the future when testing complete
-		#self.robots = https://www.cvs.com/robots.txt
+		# TODO: need to remove hard coded links and use on site navigation, running into issue where the site still knows that I am using a bot, even with selenium stealth and undetected chrome driver
+		self.loginURL = "https://www.cvs.com/retail-login/account/login/home?icid=cvsheader:signin&screenname=/"
+		self.extraCare = "https://www.cvs.com/extracare/home?icid=cvsheader:extracare"
+		self.robots = "https://www.cvs.com/robots.txt"
 
-		# Internal setup actions
-		options = self.driverOptions()
-		#self.driver = webdriver.Chrome()
+		# Webdriver setup
+		options = self.driverOptions(headless)
 		self.driver = uc.Chrome(options=options)
 
-		#self.robotsParse = self.setupURLChecker()
+		stealth(self.driver,
+				languages=["en-US", "en"],
+				vendor="Google Inc.",
+				platform="Win32",
+				webgl_vendor="Intel Inc.",
+				renderer="Intel Iris OpenGL Engine",
+				fix_hairline=True,
+				)
+
+		self.robotsParse = self.setupURLChecker()
 		random.seed(time.time())
 
-	def driverOptions(self):
+	def driverOptions(self, headless):
 		""" Sets up the desired options for the chrome driver. """
 
 		options = uc.ChromeOptions()
 		options.add_argument("start-maximized")
-		#options.add_argument("--headless")
+		options.add_experimental_option("excludeSwitches", ["enable-automation"])
+		options.add_experimental_option('useAutomationExtension', False)
+
+		if(headless):
+			options.add_argument("--headless")
 
 		return(options)
 
@@ -166,10 +200,10 @@ class cvsDeals():
 		print("Checking robots.txt")
 
 		if(self.robotsParse.can_fetch("*", url)):
-			print("The web page: {0}   is allowed to be parsed and botted according to the robot.txt file on hand. ".format(url))
+			print("    The web page: {0}   is allowed to be parsed and botted according to the robot.txt file on hand. ".format(url))
 			return(True)
 		else:
-			print("The web page: {0}   is NOT allowed to be parsed and botted according to the robot.txt file on hand. ".format(url))
+			print("    The web page: {0}   is NOT allowed to be parsed and botted according to the robot.txt file on hand. ".format(url))
 			return(False)
 
 	def login(self):
@@ -264,12 +298,13 @@ class cvsDeals():
 
 		print("Scrolling to the bottom of the website...")
 
-		#el_bot = self.driver.find_element(by=By.CLASS_NAME, value="footer-container red-line")
 		el_bot = self.driver.find_element(by=By.CLASS_NAME, value="upper-footer-container")
 
 		# Scroll to the bottom of the page
 		actions = ActionChains(self.driver)
 		actions.move_to_element(el_bot).perform()
+
+		print("Scrolling complete")
 
 	def expandPageInstantTwo(self):
 		""" Another way to instantly go all the way down to the bottom of a web page. """
@@ -342,7 +377,13 @@ class cvsDeals():
 
 		# Now go through and click on all of them to add to card, processing time for each request should take around 1-5 seconds
 		for item in dealsToAdd:
-			# item.click()
+
+			# Scroll to the element
+			self.driver.execute_script('arguments[0].scrollIntoView({behavior:"smooth"});', item)
+
+			time.sleep(0.5)
+
+			item.click()
 			print("Clicked on element {0}".format(item.get_attribute("src").split('/')[-1]))
 
 			# Wait to not overload server
@@ -352,6 +393,8 @@ class cvsDeals():
 		""" Main driver for testing on downloaded website. """
 
 		print("Running TEST main driver")
+
+		self.extraCare = "file:///home/daniel/Documents/CVS_website/FullWebsite/Manage ExtraCare Deals & Rewards.html"
 
 		self.driver.get(self.extraCare)
 
@@ -389,7 +432,8 @@ class cvsDeals():
 
 		# Check if the user is logged into the website
 		try:
-			self.driver.find_element_by_link_text("Sign Out")
+			#self.driver.find_element_by_link_text("Sign Out")
+			self.driver.find_element(by=By.LINK_TEXT, value="Sign Out")
 			loggedIn = True
 		except Exception as e:
 			loggedIn = False
@@ -440,12 +484,14 @@ if __name__ == "__main__":
 
 	username = option.username
 	password = option.password
+	headless = option.headless
 	#webWait = option.webWait
 	webWait = 20
 
-	app = cvsDeals(username, password, webWait)
+	app = cvsDeals(username, password, webWait, headless)
 
-	app.mainDriverTest()
+	#app.mainDriverTest()
 
+	app.mainDriver()
 
 
